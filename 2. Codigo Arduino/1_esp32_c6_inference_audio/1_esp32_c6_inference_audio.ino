@@ -2,16 +2,34 @@
 #include "ESP_I2S.h"
 #include "Wire.h"
 #include "es8311.h"
-#include <Baby-Crying-Detection_inferencing.h>  // Tu modelo
+#include <Baby-Crying-Detection_inferencing.h>
 
+// ---- Pantalla con Arduino_GFX_Library ----
+#include <Arduino_GFX_Library.h>
+
+#define LCD_SCK 1
+#define LCD_DIN 2
+#define LCD_CS 5
+#define LCD_DC 3
+#define LCD_RST 4
+#define LCD_BL 6
+#define GFX_BL LCD_BL
+
+Arduino_DataBus *bus = new Arduino_HWSPI(LCD_DC, LCD_CS, LCD_SCK, LCD_DIN);
+Arduino_GFX *gfx = new Arduino_ST7789(
+  bus, LCD_RST, 0 /* rotation */, true /* IPS */,
+  240 /* width */, 280 /* height */,
+  0, 20, 0, 20);
+
+// ---- Configuración del micrófono ES8311 ----
 #define I2C_SDA 8
 #define I2C_SCL 7
 
-#define I2S_MCK_PIN 19   
-#define I2S_BCK_PIN 20   
-#define I2S_LRCK_PIN 22  
-#define I2S_DOUT_PIN 23  
-#define I2S_DIN_PIN 21   
+#define I2S_MCK_PIN 19
+#define I2S_BCK_PIN 20
+#define I2S_LRCK_PIN 22
+#define I2S_DOUT_PIN 23
+#define I2S_DIN_PIN 21
 
 #define I2S_NUM I2S_NUM_0
 #define SAMPLE_RATE 16000
@@ -22,7 +40,6 @@
 #define SLOT_SELECT I2S_STD_SLOT_LEFT
 
 I2SClass i2s;
-
 #define SAMPLE_BUFFER_SIZE 2048
 int16_t audio_buffer[SAMPLE_BUFFER_SIZE];
 
@@ -81,7 +98,8 @@ void setupI2S() {
   i2s.setPins(I2S_BCK_PIN, I2S_LRCK_PIN, I2S_DOUT_PIN, I2S_DIN_PIN, I2S_MCK_PIN);
   if (!i2s.begin(I2S_MODE_STD, SAMPLE_RATE, SAMPLE_BITS, SLOT_MODE, SLOT_SELECT)) {
     Serial.println("Error: I2S init failed");
-    while (1);
+    while (1)
+      ;
   }
 }
 
@@ -96,42 +114,42 @@ void setupInference(uint32_t n_samples) {
 
 void setup() {
   Serial.begin(115200);
-  delay(500);  // Espera por si el monitor serial tarda
+  delay(500);
   Serial.println("📣 Iniciando sistema...");
 
   Wire.begin(I2C_SDA, I2C_SCL);
-  Serial.println("✅ Wire iniciado");
-
   if (es8311_codec_init() != ESP_OK) {
     Serial.println("❌ Error inicializando codec ES8311");
-    while (1);
-  } else {
-    Serial.println("✅ Codec ES8311 inicializado");
+    while (1)
+      ;
   }
 
   setupI2S();
-  Serial.println("✅ I2S iniciado");
-
   setupInference(EI_CLASSIFIER_SLICE_SIZE);
-  Serial.println("✅ Buffers de inferencia listos");
-
   run_classifier_init();
-  Serial.println("✅ Clasificador Edge Impulse inicializado");
 
-  Serial.println("🚀 Sistema listo para inferencia continua");
+  // ---- Inicializar pantalla ----
+  if (!gfx->begin()) {
+    Serial.println("❌ Error al iniciar pantalla");
+    while (1)
+      ;
+  }
+  gfx->fillScreen(RGB565_BLACK);
+  pinMode(GFX_BL, OUTPUT);
+  digitalWrite(GFX_BL, HIGH);
+
+  gfx->setCursor(10, 10);
+  gfx->setTextColor(RGB565_GREEN);
+  gfx->setTextSize(2);
+  gfx->println("Sistema listo...");
+  delay(1000);
 }
 
-
 void loop() {
-  //Serial.println("⏺️ Leyendo audio...");
   i2s.readBytes((char *)audio_buffer, SAMPLE_BUFFER_SIZE * sizeof(int16_t));
-  //Serial.println("🎧 Audio leído");
-
   audio_inference_callback(SAMPLE_BUFFER_SIZE * sizeof(int16_t));
-  //Serial.println("📥 Audio enviado al buffer de inferencia");
 
   if (inference.buf_ready == 1) {
-    //Serial.println("⚡ Buffer listo, ejecutando inferencia...");
     inference.buf_ready = 0;
 
     signal_t signal;
@@ -148,15 +166,32 @@ void loop() {
     }
 
     if (++print_results >= EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW) {
-      Serial.println("✅ Predicciones:");
+      gfx->fillScreen(RGB565_BLACK);
+      gfx->setCursor(10, 10);
+      gfx->setTextColor(RGB565_CYAN);
+      gfx->setTextSize(2);
+      gfx->println("Predicciones:");
+
+      int y = 40;
       for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-        Serial.print("  ");
-        Serial.print(result.classification[ix].label);
-        Serial.print(": ");
-        Serial.println(result.classification[ix].value, 4);
+        // Etiqueta
+        gfx->setCursor(10, y);
+        gfx->setTextColor(RGB565_WHITE);
+        gfx->print(result.classification[ix].label);
+
+        // Valor numérico (confidence)
+        gfx->setCursor(160, y);
+        gfx->setTextColor(RGB565_YELLOW);
+        gfx->print(": ");
+        gfx->print(result.classification[ix].value, 2);  // muestra por ejemplo 0.85
+
+        // Barra de progreso
+        int barWidth = result.classification[ix].value * 180;
+        gfx->fillRect(10, y + 18, barWidth, 10, RGB565_GREEN);
+
+        y += 40;
       }
       print_results = 0;
     }
   }
 }
-
