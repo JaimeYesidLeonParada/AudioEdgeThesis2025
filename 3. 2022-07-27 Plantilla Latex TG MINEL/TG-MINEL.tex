@@ -1,0 +1,42 @@
+% Esta plantilla se basa en la establecida para los trabajos de posgrado de la Universidad Nacional de Colombia
+\input{HojaTitulo/Encabezado}
+\begin{document}
+\pagenumbering{roman}
+\include{HojaTitulo/HojaTitulo}
+
+\renewcommand{\tablename}{\textbf{Tabla}}
+\renewcommand{\figurename}{\textbf{Figura}}
+\renewcommand{\listtablename}{Lista de Tablas}
+\renewcommand{\listfigurename}{Lista de Figuras}
+\renewcommand{\contentsname}{Contenido}
+
+\tableofcontents
+\listoffigures
+\listoftables
+%\include{Resumen}%\newcommand{\clearemptydoublepage}{\newpage{\pagestyle{empty}\cleardoublepage}}
+\pagenumbering{arabic}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CAPÍTULOS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{Cap1/Introduccion} % max 3p
+\include{Cap2/EstadoArte} % max 5p
+\include{Cap3/Sistema} % max 4p
+\include{Cap4/Desarrollos} % max 20p
+\include{Cap5/ExperimentosAnalisis} % max 10p
+\include{Cap6/Conclusiones} % max 2p
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BIBLIOGRAFIA
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addcontentsline{toc}{chapter}{\numberline{}Bibliografía}
+\bibliographystyle{ieeetran}
+\bibliography{biblio}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ANEXOS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{Anexos/Anexos}
+
+\end{document}
