@@ -3,10 +3,10 @@
 #include "Wire.h"
 #include "es8311.h"
 #include <Baby-Crying-Detection_inferencing.h>
-
-// ---- Pantalla con Arduino_GFX_Library ----
 #include <Arduino_GFX_Library.h>
+#include "SensorPCF85063.hpp"
 
+// ---- Pantalla ----
 #define LCD_SCK 1
 #define LCD_DIN 2
 #define LCD_CS 5
@@ -17,8 +17,7 @@
 
 Arduino_DataBus *bus = new Arduino_HWSPI(LCD_DC, LCD_CS, LCD_SCK, LCD_DIN);
 Arduino_GFX *gfx = new Arduino_ST7789(
-  bus, LCD_RST, 0 /* rotation */, true /* IPS */,
-  240 /* width */, 280 /* height */,
+  bus, LCD_RST, 0, true, 240, 280,
   0, 20, 0, 20);
 
 // ---- Configuración del micrófono ES8311 ----
@@ -43,8 +42,11 @@ I2SClass i2s;
 #define SAMPLE_BUFFER_SIZE 2048
 int16_t audio_buffer[SAMPLE_BUFFER_SIZE];
 
-const int MOTOR_VIBRATOR_PIN = 18;   // GPIO18 conectado al motor vibrador
-const int BATTERY_ENABLE_PIN = 15;   // GPIO15 usado para habilitar la batería
+const int MOTOR_VIBRATOR_PIN = 18;   // GPIO18 motor vibrador
+const int BATTERY_ENABLE_PIN = 15;   // GPIO15 batería
+
+// ---- RTC ----
+SensorPCF85063 rtc;
 
 typedef struct {
   signed short *buffers[2];
@@ -58,11 +60,24 @@ static inference_t inference;
 static bool debug_nn = false;
 static int print_results = -(EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW);
 
+// --- Inicialización RTC ---
+void pcf85063_init(void) {
+  if (!rtc.begin(Wire)) {
+    while (1) {
+      Serial.println("❌ No se detecta RTC PCF85063");
+      delay(1000);
+    }
+  }
+  RTC_DateTime datetime = rtc.getDateTime();
+  if (datetime.getYear() < 2027) {
+    rtc.setDateTime(2025, 8, 18, 15, 20, 0);
+  }
+}
+
 // --- Alimentador del buffer para inferencia ---
 void audio_inference_callback(uint32_t n_bytes) {
   for (int i = 0; i < n_bytes / 2; i++) {
     inference.buffers[inference.buf_select][inference.buf_count++] = audio_buffer[i] * 8;
-
     if (inference.buf_count >= inference.n_samples) {
       inference.buf_select ^= 1;
       inference.buf_count = 0;
@@ -77,7 +92,7 @@ static int microphone_audio_signal_get_data(size_t offset, size_t length, float 
   return 0;
 }
 
-// --- Inicialización del codec ---
+// --- Inicialización codec ---
 esp_err_t es8311_codec_init() {
   es8311_handle_t es_handle = es8311_create(I2C_NUM_0, ES8311_ADDRRES_0);
   if (!es_handle) return ESP_FAIL;
@@ -101,8 +116,7 @@ void setupI2S() {
   i2s.setPins(I2S_BCK_PIN, I2S_LRCK_PIN, I2S_DOUT_PIN, I2S_DIN_PIN, I2S_MCK_PIN);
   if (!i2s.begin(I2S_MODE_STD, SAMPLE_RATE, SAMPLE_BITS, SLOT_MODE, SLOT_SELECT)) {
     Serial.println("Error: I2S init failed");
-    while (1)
-      ;
+    while (1);
   }
 }
 
@@ -121,21 +135,24 @@ void setup() {
   Serial.println("📣 Iniciando sistema...");
 
   Wire.begin(I2C_SDA, I2C_SCL);
+
+  // Inicializa codec de audio
   if (es8311_codec_init() != ESP_OK) {
     Serial.println("❌ Error inicializando codec ES8311");
-    while (1)
-      ;
+    while (1);
   }
+
+  // Inicializa RTC
+  pcf85063_init();
 
   setupI2S();
   setupInference(EI_CLASSIFIER_SLICE_SIZE);
   run_classifier_init();
 
-  // ---- Inicializar pantalla ----
+  // ---- Pantalla ----
   if (!gfx->begin()) {
     Serial.println("❌ Error al iniciar pantalla");
-    while (1)
-      ;
+    while (1);
   }
   gfx->fillScreen(RGB565_BLACK);
   pinMode(GFX_BL, OUTPUT);
@@ -148,18 +165,15 @@ void setup() {
   delay(1000);
 
   // Pines Init
-  pinMode(MOTOR_VIBRATOR_PIN, OUTPUT);  // Configura el pin como salida
-  pinMode(BATTERY_ENABLE_PIN, OUTPUT);  // Configura el pin como salida
-
-  // When powered by a battery, pressing the PWR button will activate the power supply. 
-  // To maintain continuous power supply, the BAT_EN (GPIO15) needs to be configured high.
+  pinMode(MOTOR_VIBRATOR_PIN, OUTPUT);
+  pinMode(BATTERY_ENABLE_PIN, OUTPUT);
   digitalWrite(BATTERY_ENABLE_PIN, HIGH);   
-
-  // // Apaga el pin (0V) para que el motor vibrador no empiece a funcionar
   digitalWrite(MOTOR_VIBRATOR_PIN, LOW);   
 }
 
 void loop() {
+  static uint32_t lastClockUpdate = 0;
+
   i2s.readBytes((char *)audio_buffer, SAMPLE_BUFFER_SIZE * sizeof(int16_t));
   audio_inference_callback(SAMPLE_BUFFER_SIZE * sizeof(int16_t));
 
@@ -181,30 +195,42 @@ void loop() {
 
     if (++print_results >= EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW) {
       gfx->fillScreen(RGB565_BLACK);
-      gfx->setCursor(10, 10);
-      gfx->setTextColor(RGB565_CYAN);
-      gfx->setTextSize(2);
-      gfx->println("Predicciones:");
 
-      int y = 40;
+      // ---- Reloj en pantalla ----
+      if (millis() - lastClockUpdate > 1000) {
+        lastClockUpdate = millis();
+        RTC_DateTime datetime = rtc.getDateTime();
+        gfx->setCursor(10, 10);
+        gfx->setTextColor(RGB565_RED, RGB565_BLACK);
+        gfx->printf("%04d-%02d-%02d\n", datetime.getYear(), datetime.getMonth(), datetime.getDay());
+        gfx->setCursor(10, 40);
+        gfx->setTextColor(RGB565_BLUE, RGB565_BLACK);
+        gfx->printf("%02d:%02d:%02d\n", datetime.getHour(), datetime.getMinute(), datetime.getSecond());
+      }
+
+      // ---- Predicciones ----
+      int y = 80;
+      gfx->setTextColor(RGB565_CYAN);
+      gfx->setCursor(10, y);
+      gfx->println("Predicciones:");
+      y += 30;
+
       for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-        // Etiqueta
         gfx->setCursor(10, y);
         gfx->setTextColor(RGB565_WHITE);
         gfx->print(result.classification[ix].label);
 
-        // Valor numérico (confidence)
         gfx->setCursor(160, y);
         gfx->setTextColor(RGB565_YELLOW);
         gfx->print(": ");
-        gfx->print(result.classification[ix].value, 2);  // muestra por ejemplo 0.85
+        gfx->print(result.classification[ix].value, 2);
 
-        // Barra de progreso
         int barWidth = result.classification[ix].value * 180;
         gfx->fillRect(10, y + 18, barWidth, 10, RGB565_GREEN);
 
         y += 40;
       }
+
       print_results = 0;
     }
   }
