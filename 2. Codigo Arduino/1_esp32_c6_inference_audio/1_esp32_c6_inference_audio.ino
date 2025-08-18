@@ -5,6 +5,7 @@
 #include <Baby-Crying-Detection_inferencing.h>
 #include <Arduino_GFX_Library.h>
 #include "SensorPCF85063.hpp"
+#include <U8g2lib.h>
 
 // ---- Pantalla ----
 #define LCD_SCK 1
@@ -42,8 +43,8 @@ I2SClass i2s;
 #define SAMPLE_BUFFER_SIZE 2048
 int16_t audio_buffer[SAMPLE_BUFFER_SIZE];
 
-const int MOTOR_VIBRATOR_PIN = 18;   // GPIO18 motor vibrador
-const int BATTERY_ENABLE_PIN = 15;   // GPIO15 batería
+const int MOTOR_VIBRATOR_PIN = 18;  // GPIO18 motor vibrador
+const int BATTERY_ENABLE_PIN = 15;  // GPIO15 batería
 
 // ---- RTC ----
 SensorPCF85063 rtc;
@@ -69,8 +70,8 @@ void pcf85063_init(void) {
     }
   }
   RTC_DateTime datetime = rtc.getDateTime();
-  if (datetime.getYear() < 2027) {
-    rtc.setDateTime(2025, 8, 18, 15, 20, 0);
+  if (datetime.getYear() < 2025) {
+    rtc.setDateTime(2025, 8, 18, 15, 43, 0);
   }
 }
 
@@ -116,7 +117,8 @@ void setupI2S() {
   i2s.setPins(I2S_BCK_PIN, I2S_LRCK_PIN, I2S_DOUT_PIN, I2S_DIN_PIN, I2S_MCK_PIN);
   if (!i2s.begin(I2S_MODE_STD, SAMPLE_RATE, SAMPLE_BITS, SLOT_MODE, SLOT_SELECT)) {
     Serial.println("Error: I2S init failed");
-    while (1);
+    while (1)
+      ;
   }
 }
 
@@ -167,8 +169,8 @@ void setup() {
   // Pines Init
   pinMode(MOTOR_VIBRATOR_PIN, OUTPUT);
   pinMode(BATTERY_ENABLE_PIN, OUTPUT);
-  digitalWrite(BATTERY_ENABLE_PIN, HIGH);   
-  digitalWrite(MOTOR_VIBRATOR_PIN, LOW);   
+  digitalWrite(BATTERY_ENABLE_PIN, HIGH);
+  digitalWrite(MOTOR_VIBRATOR_PIN, LOW);
 }
 
 void loop() {
@@ -197,23 +199,43 @@ void loop() {
       gfx->fillScreen(RGB565_BLACK);
 
       // ---- Reloj en pantalla ----
+      // ---- Mostrar Hora Grande y Centrada ----
       if (millis() - lastClockUpdate > 1000) {
         lastClockUpdate = millis();
         RTC_DateTime datetime = rtc.getDateTime();
-        gfx->setCursor(10, 10);
-        gfx->setTextColor(RGB565_RED, RGB565_BLACK);
-        gfx->printf("%04d-%02d-%02d\n", datetime.getYear(), datetime.getMonth(), datetime.getDay());
-        gfx->setCursor(10, 40);
-        gfx->setTextColor(RGB565_BLUE, RGB565_BLACK);
-        gfx->printf("%02d:%02d:%02d\n", datetime.getHour(), datetime.getMinute(), datetime.getSecond());
+
+        // String de hora y minutos
+        char horaStr[10];
+        sprintf(horaStr, "%02d:%02d", datetime.getHour(), datetime.getMinute());
+
+        // Fuente grande para números
+        gfx->setFont(u8g2_font_fub25_tn);                  // Bold 30px, solo números
+        uint16_t relojVerde = gfx->color565(0, 255, 179);  // Verde neón
+        gfx->setTextColor(relojVerde, RGB565_BLACK);
+
+        // Calcular ancho para centrar
+        int16_t x1, y1;
+        uint16_t w, h;
+        gfx->getTextBounds(horaStr, 0, 0, &x1, &y1, &w, &h);
+
+        int16_t centerX = (gfx->width() - w) / 2;
+        int16_t posY = 65;  // Altura de la hora en la pantalla
+
+        // Limpiar franja superior
+        gfx->fillRect(0, 0, gfx->width(), 60, RGB565_BLACK);
+
+        // Dibujar hora centrada
+        gfx->setCursor(centerX, posY);
+        gfx->println(horaStr);
       }
 
+      // ---- Restaurar fuente por defecto ----
+      gfx->setFont((const GFXfont *)NULL); 
+      gfx->setTextSize(2); // tamaño normal
+      gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
+
       // ---- Predicciones ----
-      int y = 80;
-      gfx->setTextColor(RGB565_CYAN);
-      gfx->setCursor(10, y);
-      gfx->println("Predicciones:");
-      y += 30;
+      int y = 85;
 
       for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
         gfx->setCursor(10, y);
@@ -222,7 +244,6 @@ void loop() {
 
         gfx->setCursor(160, y);
         gfx->setTextColor(RGB565_YELLOW);
-        gfx->print(": ");
         gfx->print(result.classification[ix].value, 2);
 
         int barWidth = result.classification[ix].value * 180;
