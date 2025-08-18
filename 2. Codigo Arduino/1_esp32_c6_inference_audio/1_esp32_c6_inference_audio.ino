@@ -43,6 +43,9 @@ I2SClass i2s;
 #define SAMPLE_BUFFER_SIZE 2048
 int16_t audio_buffer[SAMPLE_BUFFER_SIZE];
 
+const int MOTOR_VIBRATOR_PIN = 18;   // GPIO18 conectado al motor vibrador
+const int BATTERY_ENABLE_PIN = 15;   // GPIO15 usado para habilitar la batería
+
 typedef struct {
   signed short *buffers[2];
   unsigned char buf_select;
@@ -143,6 +146,17 @@ void setup() {
   gfx->setTextSize(2);
   gfx->println("Sistema listo...");
   delay(1000);
+
+  // Pines Init
+  pinMode(MOTOR_VIBRATOR_PIN, OUTPUT);  // Configura el pin como salida
+  pinMode(BATTERY_ENABLE_PIN, OUTPUT);  // Configura el pin como salida
+
+  // When powered by a battery, pressing the PWR button will activate the power supply. 
+  // To maintain continuous power supply, the BAT_EN (GPIO15) needs to be configured high.
+  digitalWrite(BATTERY_ENABLE_PIN, HIGH);   
+
+  // // Apaga el pin (0V) para que el motor vibrador no empiece a funcionar
+  digitalWrite(MOTOR_VIBRATOR_PIN, LOW);   
 }
 
 void loop() {
