@@ -6,6 +6,7 @@
 #include <Arduino_GFX_Library.h>
 #include "SensorPCF85063.hpp"
 #include <U8g2lib.h>
+#include "thingProperties.h"
 
 // ---- Pantalla ----
 #define LCD_SCK 1
@@ -15,6 +16,12 @@
 #define LCD_RST 4
 #define LCD_BL 6
 #define GFX_BL LCD_BL
+
+// ------- WiFi ---------
+const char* ssid     = "Familia Leon";
+const char* password = "3186277230";
+const char* deviceID = "fa7f8f34-db1a-453e-9dc9-1704d1404bb4";
+const char* secretKey = "KthpL@KGJxYjuYO!PanhQm5?H";
 
 Arduino_DataBus *bus = new Arduino_HWSPI(LCD_DC, LCD_CS, LCD_SCK, LCD_DIN);
 Arduino_GFX *gfx = new Arduino_ST7789(
@@ -71,7 +78,7 @@ void pcf85063_init(void) {
   }
   RTC_DateTime datetime = rtc.getDateTime();
   if (datetime.getYear() < 2025) {
-    rtc.setDateTime(2025, 8, 18, 15, 43, 0);
+    rtc.setDateTime(2025, 9, 21, 17, 01, 0);
   }
 }
 
@@ -131,6 +138,30 @@ void setupInference(uint32_t n_samples) {
   inference.n_samples = n_samples;
 }
 
+void onLEDStateChange()  {
+  // Add your code here to act upon LEDState change
+  //digitalWrite(LED_BUILTIN, lED_State);  // turn the LED on (HIGH is the voltage level)
+}
+
+void setupWiFi() {
+  Serial.println();
+  Serial.println("******************************************************");
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -171,9 +202,21 @@ void setup() {
   pinMode(BATTERY_ENABLE_PIN, OUTPUT);
   digitalWrite(BATTERY_ENABLE_PIN, HIGH);
   digitalWrite(MOTOR_VIBRATOR_PIN, LOW);
+
+  // Setup WiFI
+  setupWiFi();
+
+  // Defined in thingProperties.h
+  initProperties();
+  // Connect to Arduino IoT Cloud
+  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
+  setDebugMessageLevel(2);
+  ArduinoCloud.printDebugInfo();
 }
 
 void loop() {
+  ArduinoCloud.update();
+
   static uint32_t lastClockUpdate = 0;
 
   i2s.readBytes((char *)audio_buffer, SAMPLE_BUFFER_SIZE * sizeof(int16_t));
@@ -209,7 +252,7 @@ void loop() {
         sprintf(horaStr, "%02d:%02d", datetime.getHour(), datetime.getMinute());
 
         // Fuente grande para números
-        gfx->setFont(u8g2_font_fub25_tn);                  // Bold 30px, solo números
+        gfx->setFont(u8g2_font_fub30_tn);                  // Bold 30px, solo números
         uint16_t relojVerde = gfx->color565(0, 255, 179);  // Verde neón
         gfx->setTextColor(relojVerde, RGB565_BLACK);
 
@@ -218,24 +261,30 @@ void loop() {
         uint16_t w, h;
         gfx->getTextBounds(horaStr, 0, 0, &x1, &y1, &w, &h);
 
-        int16_t centerX = (gfx->width() - w) / 2;
-        int16_t posY = 65;  // Altura de la hora en la pantalla
+        int16_t centerX = ((gfx->width() - w) / 2) - 10;
+        int16_t posY = 85;  // Altura de la hora en la pantalla
 
         // Limpiar franja superior
-        gfx->fillRect(0, 0, gfx->width(), 60, RGB565_BLACK);
+        gfx->fillRect(0, 0, gfx->width(), 70, RGB565_BLACK);
 
         // Dibujar hora centrada
         gfx->setCursor(centerX, posY);
         gfx->println(horaStr);
       }
-
+      
       // ---- Restaurar fuente por defecto ----
       gfx->setFont((const GFXfont *)NULL); 
       gfx->setTextSize(2); // tamaño normal
       gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
 
       // ---- Predicciones ----
-      int y = 85;
+      int y = 105;
+
+       // print the predictions on console
+      ei_printf("Predictions ");
+      ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
+          result.timing.dsp, result.timing.classification, result.timing.anomaly);
+      ei_printf(": \n");
 
       for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
         gfx->setCursor(10, y);
@@ -250,6 +299,27 @@ void loop() {
         gfx->fillRect(10, y + 18, barWidth, 10, RGB565_GREEN);
 
         y += 40;
+
+        // Imprime el resultado de cada clase
+        ei_printf("    %s: ", result.classification[ix].label);
+        ei_printf_float(result.classification[ix].value);
+        ei_printf("\n");
+
+        if (result.classification[ix].label == "baby-crying") {
+          babyCryingDetection = result.classification[ix].value;
+        }
+
+        if (result.classification[ix].label == "ambulance") {
+          ambulance = result.classification[ix].value;
+        }
+
+        if (result.classification[ix].label == "fire") {
+          fireAlarm = result.classification[ix].value;
+        }
+
+        if (result.classification[ix].label == "noise") {
+          noise = result.classification[ix].value;
+        }
       }
 
       print_results = 0;
