@@ -12,7 +12,7 @@ void pcf85063_init(void) {
     }
   }
   RTC_DateTime datetime = rtc.getDateTime();
-  if (datetime.getYear() < 2027) {
+  if (datetime.getYear() < 2024) {
     rtc.setDateTime(2025, 11, 3, 12, 32, 0);
   }
 }

@@ -17,12 +17,6 @@
 #define LCD_BL 6
 #define GFX_BL LCD_BL
 
-// ------- WiFi ---------
-/*const char* ssid     = "Familia Leon";
-const char* password = "3186277230";
-const char* deviceID = "fa7f8f34-db1a-453e-9dc9-1704d1404bb4";
-const char* secretKey = "KthpL@KGJxYjuYO!PanhQm5?H";*/
-
 Arduino_DataBus *bus = new Arduino_HWSPI(LCD_DC, LCD_CS, LCD_SCK, LCD_DIN);
 Arduino_GFX *gfx = new Arduino_ST7789(
   bus, LCD_RST, 0, true, 240, 280,
@@ -126,25 +120,6 @@ void onLEDStateChange()  {
   //digitalWrite(LED_BUILTIN, lED_State);  // turn the LED on (HIGH is the voltage level)
 }
 
-/*void setupWiFi() {
-  Serial.println();
-  Serial.println("******************************************************");
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-}*/
-
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -186,19 +161,16 @@ void setup() {
   digitalWrite(BATTERY_ENABLE_PIN, HIGH);
   digitalWrite(MOTOR_VIBRATOR_PIN, LOW);
 
-  // Setup WiFI
-  //setupWiFi();
-
   // Defined in thingProperties.h
-  /*initProperties();
+  initProperties();
   // Connect to Arduino IoT Cloud
   ArduinoCloud.begin(ArduinoIoTPreferredConnection);
   setDebugMessageLevel(2);
-  ArduinoCloud.printDebugInfo();*/
+  ArduinoCloud.printDebugInfo();
 }
 
 void loop() {
-  //ArduinoCloud.update();
+  ArduinoCloud.update();
 
   static uint32_t lastClockUpdate = 0;
 
