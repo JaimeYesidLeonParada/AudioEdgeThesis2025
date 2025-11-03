@@ -1,10 +1,8 @@
 #include "CloudManager.h"
-//#include "thingProperties.h"   // define initProperties() y ArduinoIoTPreferredConnection
-#include <ArduinoIoTCloud.h>   // opcional, por claridad (no modificar otras cosas)
+#include <ArduinoIoTCloud.h> 
 
-// Declaraciones externas: indicamos que existen en otro módulo (.ino)
-extern void initProperties();  // función definida en thingProperties.h (incluida en el .ino)
-extern WiFiConnectionHandler ArduinoIoTPreferredConnection; // variable definida en thingProperties.h
+extern void initProperties(); 
+extern WiFiConnectionHandler ArduinoIoTPreferredConnection; 
 
 void CloudManager::begin() {
   // Registrar propiedades y callbacks definidos en thingProperties.h

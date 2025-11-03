@@ -8,6 +8,8 @@
 #include "thingProperties.h"
 #include "ClockDisplay.h"
 #include "CloudManager.h"
+#include "ResultsDisplay.h"
+
 
 // ---- Pantalla ----
 #define LCD_SCK 1
@@ -25,6 +27,8 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 
 ClockDisplay clockDisplay(gfx);
 CloudManager cloudManager;
+ResultsDisplay resultsDisplay(gfx);
+
 
 // ---- Configuración del micrófono ES8311 ----
 #define I2C_SDA 8
@@ -162,19 +166,12 @@ void setup() {
   digitalWrite(BATTERY_ENABLE_PIN, HIGH);
   digitalWrite(MOTOR_VIBRATOR_PIN, LOW);
 
-  // Defined in thingProperties.h
-  /*initProperties();
-  // Connect to Arduino IoT Cloud
-  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
-  setDebugMessageLevel(2);
-  ArduinoCloud.printDebugInfo();*/
-
   cloudManager.begin();
   clockDisplay.begin();
+  resultsDisplay.begin();
 }
 
 void loop() {
-  //ArduinoCloud.update();
   cloudManager.update();
 
   static uint32_t lastClockUpdate = 0;
@@ -199,10 +196,17 @@ void loop() {
     }
 
     if (++print_results >= EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW) {
-      gfx->fillScreen(RGB565_BLACK);
+      //gfx->fillScreen(RGB565_BLACK);
+
+      
+
+      resultsDisplay.showResults(result);
 
       clockDisplay.update();
       
+      //resultsDisplay.showProbabilities(result);
+      
+      /*
       // ---- Restaurar fuente por defecto ----
       gfx->setFont((const GFXfont *)NULL); 
       gfx->setTextSize(2); // tamaño normal
@@ -217,7 +221,10 @@ void loop() {
           result.timing.dsp, result.timing.classification, result.timing.anomaly);
       ei_printf(": \n");
 
+      resultsDisplay.showResults(result);
+      */
       for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+        /*
         gfx->setCursor(10, y);
         gfx->setTextColor(RGB565_WHITE);
         gfx->print(result.classification[ix].label);
@@ -234,7 +241,7 @@ void loop() {
         // Imprime el resultado de cada clase
         ei_printf("    %s: ", result.classification[ix].label);
         ei_printf_float(result.classification[ix].value);
-        ei_printf("\n");
+        ei_printf("\n");*/
 
         if (result.classification[ix].label == "baby-crying") {
           babyCryingDetection = result.classification[ix].value;
