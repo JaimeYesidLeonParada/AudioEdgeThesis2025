@@ -11,17 +11,7 @@
 #include "ResultsDisplay.h"
 #include "SystemManager.h"
 #include "HardwareConfig.h"
-
-
-
-// ---- Pantalla ----
-/*#define LCD_SCK 1
-#define LCD_DIN 2
-#define LCD_CS 5
-#define LCD_DC 3
-#define LCD_RST 4
-#define LCD_BL 6
-#define GFX_BL LCD_BL*/
+#include "AudioManager.h"
 
 Arduino_DataBus *bus = new Arduino_HWSPI(LCD_DC, LCD_CS, LCD_SCK, LCD_DIN);
 Arduino_GFX *gfx = new Arduino_ST7789(
@@ -32,17 +22,9 @@ ClockDisplay clockDisplay(gfx);
 CloudManager cloudManager;
 ResultsDisplay resultsDisplay(gfx);
 SystemManager systemManager(gfx);
+AudioManager audioManager;
 
 // ---- Configuración del micrófono ES8311 ----
-//#define I2C_SDA 8
-//#define I2C_SCL 7
-
-/*#define I2S_MCK_PIN 19
-#define I2S_BCK_PIN 20
-#define I2S_LRCK_PIN 22
-#define I2S_DOUT_PIN 23
-#define I2S_DIN_PIN 21*/
-
 #define I2S_NUM I2S_NUM_0
 #define SAMPLE_RATE 16000
 #define MCLK_MULTIPLE 256
@@ -54,9 +36,6 @@ SystemManager systemManager(gfx);
 I2SClass i2s;
 #define SAMPLE_BUFFER_SIZE 2048
 int16_t audio_buffer[SAMPLE_BUFFER_SIZE];
-
-//const int MOTOR_VIBRATOR_PIN = 18;  // GPIO18 motor vibrador
-//const int BATTERY_ENABLE_PIN = 15;  // GPIO15 batería
 
 typedef struct {
   signed short *buffers[2];
@@ -108,14 +87,14 @@ esp_err_t es8311_codec_init() {
   return ESP_OK;
 }
 
-void setupI2S() {
+/*void setupI2S() {
   i2s.setPins(I2S_BCK_PIN, I2S_LRCK_PIN, I2S_DOUT_PIN, I2S_DIN_PIN, I2S_MCK_PIN);
   if (!i2s.begin(I2S_MODE_STD, SAMPLE_RATE, SAMPLE_BITS, SLOT_MODE, SLOT_SELECT)) {
     Serial.println("Error: I2S init failed");
     while (1)
       ;
   }
-}
+}*/
 
 void setupInference(uint32_t n_samples) {
   inference.buffers[0] = (signed short *)malloc(n_samples * sizeof(signed short));
@@ -137,39 +116,20 @@ void setup() {
   Serial.println("📣 Iniciando sistema...");
 
   systemManager.begin();
+  if (!audioManager.begin()) {
+    while (1);
+  }
 
-  //Wire.begin(I2C_SDA, I2C_SCL);
 
   // Inicializa codec de audio
-  if (es8311_codec_init() != ESP_OK) {
+  /*if (es8311_codec_init() != ESP_OK) {
     Serial.println("❌ Error inicializando codec ES8311");
     while (1);
-  }
+  }*/
 
-  setupI2S();
+  //setupI2S();
   setupInference(EI_CLASSIFIER_SLICE_SIZE);
   run_classifier_init();
-
-  // ---- Pantalla ----
-  /*if (!gfx->begin()) {
-    Serial.println("❌ Error al iniciar pantalla");
-    while (1);
-  }
-  gfx->fillScreen(RGB565_BLACK);
-  pinMode(GFX_BL, OUTPUT);
-  digitalWrite(GFX_BL, HIGH);
-
-  gfx->setCursor(10, 10);
-  gfx->setTextColor(RGB565_GREEN);
-  gfx->setTextSize(2);
-  gfx->println("Sistema listo...");
-  delay(1000);
-
-  // Pines Init
-  pinMode(MOTOR_VIBRATOR_PIN, OUTPUT);
-  pinMode(BATTERY_ENABLE_PIN, OUTPUT);
-  digitalWrite(BATTERY_ENABLE_PIN, HIGH);
-  digitalWrite(MOTOR_VIBRATOR_PIN, LOW);*/
 
   cloudManager.begin();
   clockDisplay.begin();
@@ -181,7 +141,9 @@ void loop() {
 
   static uint32_t lastClockUpdate = 0;
 
-  i2s.readBytes((char *)audio_buffer, SAMPLE_BUFFER_SIZE * sizeof(int16_t));
+  //i2s.readBytes((char *)audio_buffer, SAMPLE_BUFFER_SIZE * sizeof(int16_t));
+  audioManager.readAudio(audio_buffer, SAMPLE_BUFFER_SIZE);
+
   audio_inference_callback(SAMPLE_BUFFER_SIZE * sizeof(int16_t));
 
   if (inference.buf_ready == 1) {
