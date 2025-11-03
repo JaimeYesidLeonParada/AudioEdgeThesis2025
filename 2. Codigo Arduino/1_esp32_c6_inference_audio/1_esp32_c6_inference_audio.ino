@@ -6,9 +6,8 @@
 #include <Arduino_GFX_Library.h>
 #include <U8g2lib.h>
 #include "thingProperties.h"
-//#include "RealTimeClock.h"
 #include "ClockDisplay.h"
-
+#include "CloudManager.h"
 
 // ---- Pantalla ----
 #define LCD_SCK 1
@@ -25,6 +24,7 @@ Arduino_GFX *gfx = new Arduino_ST7789(
   0, 20, 0, 20);
 
 ClockDisplay clockDisplay(gfx);
+CloudManager cloudManager;
 
 // ---- Configuración del micrófono ES8311 ----
 #define I2C_SDA 8
@@ -137,9 +137,6 @@ void setup() {
     while (1);
   }
 
-  // Inicializa RTC asegurarse de llama Wire.begin() antes
-  //pcf85063_init();
-
   setupI2S();
   setupInference(EI_CLASSIFIER_SLICE_SIZE);
   run_classifier_init();
@@ -166,17 +163,19 @@ void setup() {
   digitalWrite(MOTOR_VIBRATOR_PIN, LOW);
 
   // Defined in thingProperties.h
-  initProperties();
+  /*initProperties();
   // Connect to Arduino IoT Cloud
   ArduinoCloud.begin(ArduinoIoTPreferredConnection);
   setDebugMessageLevel(2);
-  ArduinoCloud.printDebugInfo();
+  ArduinoCloud.printDebugInfo();*/
 
+  cloudManager.begin();
   clockDisplay.begin();
 }
 
 void loop() {
-  ArduinoCloud.update();
+  //ArduinoCloud.update();
+  cloudManager.update();
 
   static uint32_t lastClockUpdate = 0;
 
@@ -202,36 +201,6 @@ void loop() {
     if (++print_results >= EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW) {
       gfx->fillScreen(RGB565_BLACK);
 
-      // ---- Reloj en pantalla ----
-      // ---- Mostrar Hora Grande y Centrada ----
-      /*if (millis() - lastClockUpdate > 1000) {
-        lastClockUpdate = millis();
-        DateTime datetime = getCurrentTime();
-
-        // String de hora y minutos
-        char horaStr[10];
-        sprintf(horaStr, "%02d:%02d", datetime.hours, datetime.minutes);
-
-        // Fuente grande para números
-        gfx->setFont(u8g2_font_fub30_tn);                  // Bold 30px, solo números
-        uint16_t relojVerde = gfx->color565(0, 255, 179);  // Verde neón
-        gfx->setTextColor(relojVerde, RGB565_BLACK);
-
-        // Calcular ancho para centrar
-        int16_t x1, y1;
-        uint16_t w, h;
-        gfx->getTextBounds(horaStr, 0, 0, &x1, &y1, &w, &h);
-
-        int16_t centerX = ((gfx->width() - w) / 2) - 10;
-        int16_t posY = 85;  // Altura de la hora en la pantalla
-
-        // Limpiar franja superior
-        gfx->fillRect(0, 0, gfx->width(), 70, RGB565_BLACK);
-
-        // Dibujar hora centrada
-        gfx->setCursor(centerX, posY);
-        gfx->println(horaStr);
-      }*/
       clockDisplay.update();
       
       // ---- Restaurar fuente por defecto ----
