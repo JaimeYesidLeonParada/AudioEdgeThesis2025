@@ -4,9 +4,9 @@
 #include "es8311.h"
 #include <Baby-Crying-Detection_inferencing.h>
 #include <Arduino_GFX_Library.h>
-#include "SensorPCF85063.hpp"
 #include <U8g2lib.h>
 #include "thingProperties.h"
+#include "RealTimeClock.h"
 
 // ---- Pantalla ----
 #define LCD_SCK 1
@@ -18,10 +18,10 @@
 #define GFX_BL LCD_BL
 
 // ------- WiFi ---------
-const char* ssid     = "Familia Leon";
+/*const char* ssid     = "Familia Leon";
 const char* password = "3186277230";
 const char* deviceID = "fa7f8f34-db1a-453e-9dc9-1704d1404bb4";
-const char* secretKey = "KthpL@KGJxYjuYO!PanhQm5?H";
+const char* secretKey = "KthpL@KGJxYjuYO!PanhQm5?H";*/
 
 Arduino_DataBus *bus = new Arduino_HWSPI(LCD_DC, LCD_CS, LCD_SCK, LCD_DIN);
 Arduino_GFX *gfx = new Arduino_ST7789(
@@ -53,9 +53,6 @@ int16_t audio_buffer[SAMPLE_BUFFER_SIZE];
 const int MOTOR_VIBRATOR_PIN = 18;  // GPIO18 motor vibrador
 const int BATTERY_ENABLE_PIN = 15;  // GPIO15 batería
 
-// ---- RTC ----
-SensorPCF85063 rtc;
-
 typedef struct {
   signed short *buffers[2];
   unsigned char buf_select;
@@ -67,20 +64,6 @@ typedef struct {
 static inference_t inference;
 static bool debug_nn = false;
 static int print_results = -(EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW);
-
-// --- Inicialización RTC ---
-void pcf85063_init(void) {
-  if (!rtc.begin(Wire)) {
-    while (1) {
-      Serial.println("❌ No se detecta RTC PCF85063");
-      delay(1000);
-    }
-  }
-  RTC_DateTime datetime = rtc.getDateTime();
-  if (datetime.getYear() < 2025) {
-    rtc.setDateTime(2025, 9, 21, 17, 01, 0);
-  }
-}
 
 // --- Alimentador del buffer para inferencia ---
 void audio_inference_callback(uint32_t n_bytes) {
@@ -143,7 +126,7 @@ void onLEDStateChange()  {
   //digitalWrite(LED_BUILTIN, lED_State);  // turn the LED on (HIGH is the voltage level)
 }
 
-void setupWiFi() {
+/*void setupWiFi() {
   Serial.println();
   Serial.println("******************************************************");
   Serial.print("Connecting to ");
@@ -160,7 +143,7 @@ void setupWiFi() {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-}
+}*/
 
 void setup() {
   Serial.begin(115200);
@@ -175,7 +158,7 @@ void setup() {
     while (1);
   }
 
-  // Inicializa RTC
+  // Inicializa RTC asegurarse de llama Wire.begin() antes
   pcf85063_init();
 
   setupI2S();
@@ -204,18 +187,18 @@ void setup() {
   digitalWrite(MOTOR_VIBRATOR_PIN, LOW);
 
   // Setup WiFI
-  setupWiFi();
+  //setupWiFi();
 
   // Defined in thingProperties.h
-  initProperties();
+  /*initProperties();
   // Connect to Arduino IoT Cloud
   ArduinoCloud.begin(ArduinoIoTPreferredConnection);
   setDebugMessageLevel(2);
-  ArduinoCloud.printDebugInfo();
+  ArduinoCloud.printDebugInfo();*/
 }
 
 void loop() {
-  ArduinoCloud.update();
+  //ArduinoCloud.update();
 
   static uint32_t lastClockUpdate = 0;
 
@@ -245,11 +228,11 @@ void loop() {
       // ---- Mostrar Hora Grande y Centrada ----
       if (millis() - lastClockUpdate > 1000) {
         lastClockUpdate = millis();
-        RTC_DateTime datetime = rtc.getDateTime();
+        DateTime datetime = getCurrentTime();
 
         // String de hora y minutos
         char horaStr[10];
-        sprintf(horaStr, "%02d:%02d", datetime.getHour(), datetime.getMinute());
+        sprintf(horaStr, "%02d:%02d", datetime.hours, datetime.minutes);
 
         // Fuente grande para números
         gfx->setFont(u8g2_font_fub30_tn);                  // Bold 30px, solo números
