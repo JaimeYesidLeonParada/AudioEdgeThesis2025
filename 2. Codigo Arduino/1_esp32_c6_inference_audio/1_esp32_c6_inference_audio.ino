@@ -6,7 +6,9 @@
 #include <Arduino_GFX_Library.h>
 #include <U8g2lib.h>
 #include "thingProperties.h"
-#include "RealTimeClock.h"
+//#include "RealTimeClock.h"
+#include "ClockDisplay.h"
+
 
 // ---- Pantalla ----
 #define LCD_SCK 1
@@ -21,6 +23,8 @@ Arduino_DataBus *bus = new Arduino_HWSPI(LCD_DC, LCD_CS, LCD_SCK, LCD_DIN);
 Arduino_GFX *gfx = new Arduino_ST7789(
   bus, LCD_RST, 0, true, 240, 280,
   0, 20, 0, 20);
+
+ClockDisplay clockDisplay(gfx);
 
 // ---- Configuración del micrófono ES8311 ----
 #define I2C_SDA 8
@@ -134,7 +138,7 @@ void setup() {
   }
 
   // Inicializa RTC asegurarse de llama Wire.begin() antes
-  pcf85063_init();
+  //pcf85063_init();
 
   setupI2S();
   setupInference(EI_CLASSIFIER_SLICE_SIZE);
@@ -167,6 +171,8 @@ void setup() {
   ArduinoCloud.begin(ArduinoIoTPreferredConnection);
   setDebugMessageLevel(2);
   ArduinoCloud.printDebugInfo();
+
+  clockDisplay.begin();
 }
 
 void loop() {
@@ -198,7 +204,7 @@ void loop() {
 
       // ---- Reloj en pantalla ----
       // ---- Mostrar Hora Grande y Centrada ----
-      if (millis() - lastClockUpdate > 1000) {
+      /*if (millis() - lastClockUpdate > 1000) {
         lastClockUpdate = millis();
         DateTime datetime = getCurrentTime();
 
@@ -225,7 +231,8 @@ void loop() {
         // Dibujar hora centrada
         gfx->setCursor(centerX, posY);
         gfx->println(horaStr);
-      }
+      }*/
+      clockDisplay.update();
       
       // ---- Restaurar fuente por defecto ----
       gfx->setFont((const GFXfont *)NULL); 
