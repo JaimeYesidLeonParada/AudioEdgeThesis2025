@@ -9,16 +9,19 @@
 #include "ClockDisplay.h"
 #include "CloudManager.h"
 #include "ResultsDisplay.h"
+#include "SystemManager.h"
+#include "HardwareConfig.h"
+
 
 
 // ---- Pantalla ----
-#define LCD_SCK 1
+/*#define LCD_SCK 1
 #define LCD_DIN 2
 #define LCD_CS 5
 #define LCD_DC 3
 #define LCD_RST 4
 #define LCD_BL 6
-#define GFX_BL LCD_BL
+#define GFX_BL LCD_BL*/
 
 Arduino_DataBus *bus = new Arduino_HWSPI(LCD_DC, LCD_CS, LCD_SCK, LCD_DIN);
 Arduino_GFX *gfx = new Arduino_ST7789(
@@ -28,17 +31,17 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 ClockDisplay clockDisplay(gfx);
 CloudManager cloudManager;
 ResultsDisplay resultsDisplay(gfx);
-
+SystemManager systemManager(gfx);
 
 // ---- Configuración del micrófono ES8311 ----
-#define I2C_SDA 8
-#define I2C_SCL 7
+//#define I2C_SDA 8
+//#define I2C_SCL 7
 
-#define I2S_MCK_PIN 19
+/*#define I2S_MCK_PIN 19
 #define I2S_BCK_PIN 20
 #define I2S_LRCK_PIN 22
 #define I2S_DOUT_PIN 23
-#define I2S_DIN_PIN 21
+#define I2S_DIN_PIN 21*/
 
 #define I2S_NUM I2S_NUM_0
 #define SAMPLE_RATE 16000
@@ -52,8 +55,8 @@ I2SClass i2s;
 #define SAMPLE_BUFFER_SIZE 2048
 int16_t audio_buffer[SAMPLE_BUFFER_SIZE];
 
-const int MOTOR_VIBRATOR_PIN = 18;  // GPIO18 motor vibrador
-const int BATTERY_ENABLE_PIN = 15;  // GPIO15 batería
+//const int MOTOR_VIBRATOR_PIN = 18;  // GPIO18 motor vibrador
+//const int BATTERY_ENABLE_PIN = 15;  // GPIO15 batería
 
 typedef struct {
   signed short *buffers[2];
@@ -133,7 +136,9 @@ void setup() {
   delay(500);
   Serial.println("📣 Iniciando sistema...");
 
-  Wire.begin(I2C_SDA, I2C_SCL);
+  systemManager.begin();
+
+  //Wire.begin(I2C_SDA, I2C_SCL);
 
   // Inicializa codec de audio
   if (es8311_codec_init() != ESP_OK) {
@@ -146,7 +151,7 @@ void setup() {
   run_classifier_init();
 
   // ---- Pantalla ----
-  if (!gfx->begin()) {
+  /*if (!gfx->begin()) {
     Serial.println("❌ Error al iniciar pantalla");
     while (1);
   }
@@ -164,7 +169,7 @@ void setup() {
   pinMode(MOTOR_VIBRATOR_PIN, OUTPUT);
   pinMode(BATTERY_ENABLE_PIN, OUTPUT);
   digitalWrite(BATTERY_ENABLE_PIN, HIGH);
-  digitalWrite(MOTOR_VIBRATOR_PIN, LOW);
+  digitalWrite(MOTOR_VIBRATOR_PIN, LOW);*/
 
   cloudManager.begin();
   clockDisplay.begin();
@@ -195,54 +200,11 @@ void loop() {
       return;
     }
 
-    if (++print_results >= EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW) {
-      //gfx->fillScreen(RGB565_BLACK);
-
-      
-
+    if (++print_results >= EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW) {     
       resultsDisplay.showResults(result);
-
       clockDisplay.update();
-      
-      //resultsDisplay.showProbabilities(result);
-      
-      /*
-      // ---- Restaurar fuente por defecto ----
-      gfx->setFont((const GFXfont *)NULL); 
-      gfx->setTextSize(2); // tamaño normal
-      gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
 
-      // ---- Predicciones ----
-      int y = 105;
-
-       // print the predictions on console
-      ei_printf("Predictions ");
-      ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
-          result.timing.dsp, result.timing.classification, result.timing.anomaly);
-      ei_printf(": \n");
-
-      resultsDisplay.showResults(result);
-      */
       for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-        /*
-        gfx->setCursor(10, y);
-        gfx->setTextColor(RGB565_WHITE);
-        gfx->print(result.classification[ix].label);
-
-        gfx->setCursor(160, y);
-        gfx->setTextColor(RGB565_YELLOW);
-        gfx->print(result.classification[ix].value, 2);
-
-        int barWidth = result.classification[ix].value * 180;
-        gfx->fillRect(10, y + 18, barWidth, 10, RGB565_GREEN);
-
-        y += 40;
-
-        // Imprime el resultado de cada clase
-        ei_printf("    %s: ", result.classification[ix].label);
-        ei_printf_float(result.classification[ix].value);
-        ei_printf("\n");*/
-
         if (result.classification[ix].label == "baby-crying") {
           babyCryingDetection = result.classification[ix].value;
         }
