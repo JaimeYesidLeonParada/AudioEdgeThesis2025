@@ -3,14 +3,13 @@
 
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
-#include <edge-impulse-sdk/classifier/ei_classifier_types.h> // Para ei_impulse_result_t
+#include "HardwareConfig.h"
 
 class ResultsDisplay {
 public:
   ResultsDisplay(Arduino_GFX *gfx);
   void begin();
-  void showResults(const ei_impulse_result_t &result);
-  void showProbabilities(const ei_impulse_result_t &result);
+  void showResults(const std::vector<ImpulseResult> &results);
 
 private:
   Arduino_GFX *gfx;
