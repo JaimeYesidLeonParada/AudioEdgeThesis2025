@@ -138,14 +138,7 @@ void setup() {
 
 void loop() {
   cloudManager.update();
-
-  static uint32_t lastClockUpdate = 0;
-
-  // 4️⃣ Actualizar reloj cada 2 segundos, hay que cambiarlo para cada minuto
-  if (millis() - lastClockUpdate > 2000) {
-    clockDisplay.update();
-    lastClockUpdate = millis();
-  }
+  showTime();
 
   //i2s.readBytes((char *)audio_buffer, SAMPLE_BUFFER_SIZE * sizeof(int16_t));
   audioManager.readAudio(audio_buffer, SAMPLE_BUFFER_SIZE);
@@ -169,9 +162,9 @@ void loop() {
     }
 
     if (++print_results >= EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW) {     
-      resultsDisplay.showResults(result);
+      //resultsDisplay.showResults(result);
 
-      for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+      /*for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
         if (result.classification[ix].label == "baby-crying") {
           babyCryingDetection = result.classification[ix].value;
         }
@@ -187,9 +180,31 @@ void loop() {
         if (result.classification[ix].label == "noise") {
           noise = result.classification[ix].value;
         }
+      }*/
+
+      std::vector<ImpulseResult> results;
+
+      for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+        ImpulseResult ir;
+        ir.label = result.classification[ix].label;
+        ir.value = result.classification[ix].value;
+        results.push_back(ir);
       }
+
+      // Mostrar todos en pantalla
+      resultsDisplay.showResults(results);
 
       print_results = 0;
     }
   }
+}
+
+void showTime() {
+   static uint32_t lastClockUpdate = 0;
+
+    // 4️⃣ Actualizar reloj cada minuto, hay que cambiarlo para cada minuto
+    if (millis() - lastClockUpdate > 60000) {
+      clockDisplay.update();
+      lastClockUpdate = millis();
+    }
 }

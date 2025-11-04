@@ -25,4 +25,9 @@
 #define MOTOR_VIBRATOR_PIN 18
 #define BATTERY_ENABLE_PIN 15
 
+struct ImpulseResult {
+  String label;  
+  float value;  
+};
+
 #endif

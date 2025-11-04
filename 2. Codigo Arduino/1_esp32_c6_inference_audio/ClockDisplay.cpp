@@ -11,8 +11,8 @@ void ClockDisplay::begin() {
 }
 
 void ClockDisplay::update() {
-  if (millis() - lastClockUpdate > 1000) {
-    lastClockUpdate = millis();
+  // Limpiar solo el área de resultados (debajo de la franja de la hora)
+  gfx->fillRect(0, 0, gfx->width(), 85, RGB565_BLACK);
 
     DateTime datetime = getCurrentTime();
     char horaStr[10];
@@ -36,5 +36,4 @@ void ClockDisplay::update() {
     gfx->setFont((const GFXfont *)NULL);
     gfx->setTextSize(2);
     gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
-  }
 }
