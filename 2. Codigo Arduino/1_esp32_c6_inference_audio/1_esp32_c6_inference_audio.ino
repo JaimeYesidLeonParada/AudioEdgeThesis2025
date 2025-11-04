@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "ESP_I2S.h"
+//#include "ESP_I2S.h"
 #include "Wire.h"
 #include "es8311.h"
 #include <Baby-Crying-Detection_inferencing.h>
@@ -25,15 +25,15 @@ SystemManager systemManager(gfx);
 AudioManager audioManager;
 
 // ---- Configuración del micrófono ES8311 ----
-#define I2S_NUM I2S_NUM_0
-#define SAMPLE_RATE 16000
-#define MCLK_MULTIPLE 256
-#define MCLK_FREQ_HZ (SAMPLE_RATE * MCLK_MULTIPLE)
-#define SAMPLE_BITS I2S_DATA_BIT_WIDTH_16BIT
-#define SLOT_MODE I2S_SLOT_MODE_MONO
-#define SLOT_SELECT I2S_STD_SLOT_LEFT
+//#define I2S_NUM I2S_NUM_0
+//#define SAMPLE_RATE 16000
+//#define MCLK_MULTIPLE 256
+//#define MCLK_FREQ_HZ (SAMPLE_RATE * MCLK_MULTIPLE)
+//#define SAMPLE_BITS I2S_DATA_BIT_WIDTH_16BIT
+//#define SLOT_MODE I2S_SLOT_MODE_MONO
+//#define SLOT_SELECT I2S_STD_SLOT_LEFT
 
-I2SClass i2s;
+//I2SClass i2s;
 #define SAMPLE_BUFFER_SIZE 2048
 int16_t audio_buffer[SAMPLE_BUFFER_SIZE];
 
@@ -68,7 +68,7 @@ static int microphone_audio_signal_get_data(size_t offset, size_t length, float 
 }
 
 // --- Inicialización codec ---
-esp_err_t es8311_codec_init() {
+/*esp_err_t es8311_codec_init() {
   es8311_handle_t es_handle = es8311_create(I2C_NUM_0, ES8311_ADDRRES_0);
   if (!es_handle) return ESP_FAIL;
 
@@ -85,7 +85,7 @@ esp_err_t es8311_codec_init() {
   ESP_ERROR_CHECK(es8311_microphone_config(es_handle, false));
 
   return ESP_OK;
-}
+}*/
 
 /*void setupI2S() {
   i2s.setPins(I2S_BCK_PIN, I2S_LRCK_PIN, I2S_DOUT_PIN, I2S_DIN_PIN, I2S_MCK_PIN);
@@ -141,6 +141,12 @@ void loop() {
 
   static uint32_t lastClockUpdate = 0;
 
+  // 4️⃣ Actualizar reloj cada 2 segundos, hay que cambiarlo para cada minuto
+  if (millis() - lastClockUpdate > 2000) {
+    clockDisplay.update();
+    lastClockUpdate = millis();
+  }
+
   //i2s.readBytes((char *)audio_buffer, SAMPLE_BUFFER_SIZE * sizeof(int16_t));
   audioManager.readAudio(audio_buffer, SAMPLE_BUFFER_SIZE);
 
@@ -164,7 +170,6 @@ void loop() {
 
     if (++print_results >= EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW) {     
       resultsDisplay.showResults(result);
-      clockDisplay.update();
 
       for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
         if (result.classification[ix].label == "baby-crying") {
