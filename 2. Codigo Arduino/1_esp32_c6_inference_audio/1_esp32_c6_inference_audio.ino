@@ -151,7 +151,8 @@ void loopInference() {
         results.push_back(ir);
       }
 
-      resultsDisplay.showResults(results);
+      AlertLevel lvl = resultsDisplay.showResults(results);
+      systemManager.vibrate(lvl);
       cloudManager.showResults(results);
 
       print_results = 0;

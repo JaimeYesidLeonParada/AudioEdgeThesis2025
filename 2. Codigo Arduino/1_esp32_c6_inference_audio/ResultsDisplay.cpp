@@ -42,7 +42,7 @@ String ResultsDisplay::getAlertMessage(const String &label, AlertLevel lvl) cons
 }
 
 
-void ResultsDisplay::showResults(const std::vector<ImpulseResult> &results) {
+AlertLevel ResultsDisplay::showResults(const std::vector<ImpulseResult> &results) {
   // Limpiar área bajo el reloj
   gfx->fillRect(0, 85, gfx->width(), gfx->height(), RGB565_BLACK);
 
@@ -87,7 +87,7 @@ void ResultsDisplay::showResults(const std::vector<ImpulseResult> &results) {
     gfx->setCursor(centerX, centerY);
     gfx->println(msg);
 
-    return;
+    return alertLevel;
   }
 
   // ==== 3. NO hay alerta → mostrar barras ====
@@ -111,52 +111,6 @@ void ResultsDisplay::showResults(const std::vector<ImpulseResult> &results) {
 
     y += 40;
   }
+
+  return alertLevel;
 }
-
-void ResultsDisplay::drawWrappedText(const String &text, int x, int startY, int maxWidth, int lineHeight) {
-  String currentLine = "";
-  String word = "";
-  int y = startY;
-
-  for (int i = 0; i < text.length(); i++) {
-    char c = text[i];
-
-    if (c == ' ' || c == '\n') {
-      String testLine = currentLine + word + " ";
-
-      // medir ancho
-      int16_t x1, y1;
-      uint16_t w, h;
-      gfx->getTextBounds(testLine, 0, 0, &x1, &y1, &w, &h);
-
-      if (w > maxWidth) {
-        gfx->setCursor(x, y);
-        gfx->print(currentLine);
-        y += lineHeight;
-        currentLine = word + " ";
-      } else {
-        currentLine = testLine;
-      }
-
-      word = "";
-
-      if (c == '\n') {
-        gfx->setCursor(x, y);
-        gfx->print(currentLine);
-        y += lineHeight;
-        currentLine = "";
-      }
-    }
-    else {
-      word += c;
-    }
-  }
-
-  // imprimir resto
-  if (currentLine.length() > 0 || word.length() > 0) {
-    gfx->setCursor(x, y);
-    gfx->print(currentLine + word);
-  }
-}
-
-

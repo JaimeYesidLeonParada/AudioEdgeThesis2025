@@ -2,14 +2,15 @@
 #define POSTPROCESSOR_H
 
 #include <Arduino.h>
+#include "HardwareConfig.h"
 
 // Nivel de alerta para una clase
-enum AlertLevel {
+/*enum AlertLevel {
   ALERT_NONE = 0,    // sin mensaje
   ALERT_PARECE,      // > umbral1  (ej. "Parece que...")
   ALERT_HAY,         // > umbral2  (ej. "Hay un...")
   ALERT_ATENCION     // > umbral3  (ej. "Atención...")
-};
+};*/
 
 class PostProcessor {
 public:

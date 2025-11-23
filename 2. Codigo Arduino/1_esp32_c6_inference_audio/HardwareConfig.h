@@ -30,4 +30,11 @@ struct ImpulseResult {
   float value;  
 };
 
+enum AlertLevel {
+  ALERT_NONE = 0,    // sin mensaje
+  ALERT_PARECE,      
+  ALERT_HAY,         
+  ALERT_ATENCION     
+};
+
 #endif|

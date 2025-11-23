@@ -1,5 +1,4 @@
 #include "SystemManager.h"
-#include "HardwareConfig.h"
 #include <Wire.h>
 
 SystemManager::SystemManager(Arduino_GFX *gfx) {
@@ -34,3 +33,34 @@ void SystemManager::begin() {
   digitalWrite(BATTERY_ENABLE_PIN, HIGH);
   digitalWrite(MOTOR_VIBRATOR_PIN, LOW);
 }
+
+void SystemManager::vibrate(AlertLevel lvl) {
+  switch (lvl) {
+    case ALERT_NONE:
+      digitalWrite(MOTOR_VIBRATOR_PIN, LOW);
+      break;
+
+    case ALERT_PARECE:
+      vibratePattern(1, 150);  // 1 pulso suave
+      break;
+
+    case ALERT_HAY:
+      vibratePattern(2, 200);  // 2 pulsos medianos
+      break;
+
+    case ALERT_ATENCION:
+      vibratePattern(3, 250);  // 3 pulsos fuertes
+      break;
+    }
+}
+
+void SystemManager::vibratePattern(int pulses, int pulseDuration) {
+    for (int i = 0; i < pulses; i++) {
+        digitalWrite(MOTOR_VIBRATOR_PIN, HIGH);
+        delay(pulseDuration);
+        digitalWrite(MOTOR_VIBRATOR_PIN, LOW);
+        delay(100);
+    }
+}
+
+
