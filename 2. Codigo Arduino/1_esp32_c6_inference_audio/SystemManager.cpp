@@ -41,15 +41,15 @@ void SystemManager::vibrate(AlertLevel lvl) {
       break;
 
     case ALERT_PARECE:
-      vibratePattern(1, 150);  // 1 pulso suave
+      vibratePattern(1, 200);  // 1 pulso suave
       break;
 
     case ALERT_HAY:
-      vibratePattern(2, 200);  // 2 pulsos medianos
+      vibratePattern(2, 250);  // 2 pulsos medianos
       break;
 
     case ALERT_ATENCION:
-      vibratePattern(3, 250);  // 3 pulsos fuertes
+      vibratePattern(3, 300);  // 3 pulsos fuertes
       break;
     }
 }

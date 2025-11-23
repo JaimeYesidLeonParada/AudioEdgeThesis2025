@@ -10,6 +10,7 @@
 #include "HardwareConfig.h"
 #include "AudioManager.h"
 #include "ESPNOWManager.h"
+#include "WiFi.h"
 
 Arduino_DataBus *bus = new Arduino_HWSPI(LCD_DC, LCD_CS, LCD_SCK, LCD_DIN);
 Arduino_GFX *gfx = new Arduino_ST7789(
@@ -80,7 +81,6 @@ void setup() {
   cloudManager.begin();
   clockDisplay.begin();
   resultsDisplay.begin();
-  setupESPNOW();
   setupPostProcessor();
 }
 
@@ -92,16 +92,26 @@ void loop() {
 }
 
 void sendDataESPNOW() {
-  // Print debug information of Slave to get masters
+  static bool configured = false;
+
+  if (WiFi.status() == WL_CONNECTED ) {
+    if (configured == false) {
+      setupESPNOW();
+      configured = true;
+      return;
+    }
+  } else {
+    return;
+  }
+
   static unsigned long last_debug = 0;
   if (millis() - last_debug > 10000) {
     last_debug = millis();
     checkMasterESPNOW();
   }
 
-
   static uint32_t lastESPNOWUpdate = 0;
-  if (millis() - lastESPNOWUpdate > 5000) {
+  if (millis() - lastESPNOWUpdate > 10000) {
     sendMessageESPNOW();
     
     lastESPNOWUpdate = millis();
