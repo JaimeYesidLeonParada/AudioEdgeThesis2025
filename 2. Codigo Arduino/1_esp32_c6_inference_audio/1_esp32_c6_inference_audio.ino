@@ -9,6 +9,7 @@
 #include "SystemManager.h"
 #include "HardwareConfig.h"
 #include "AudioManager.h"
+#include "ESPNOWManager.h"
 
 Arduino_DataBus *bus = new Arduino_HWSPI(LCD_DC, LCD_CS, LCD_SCK, LCD_DIN);
 Arduino_GFX *gfx = new Arduino_ST7789(
@@ -20,6 +21,7 @@ CloudManager cloudManager;
 ResultsDisplay resultsDisplay(gfx);
 SystemManager systemManager(gfx);
 AudioManager audioManager;
+PostProcessor *pp;
 
 #define SAMPLE_BUFFER_SIZE 2048
 int16_t audio_buffer[SAMPLE_BUFFER_SIZE];
@@ -78,20 +80,40 @@ void setup() {
   cloudManager.begin();
   clockDisplay.begin();
   resultsDisplay.begin();
+  setupESPNOW();
+  setupPostProcessor();
 }
 
 void loop() {
   cloudManager.update();
   showTime();
   loopInference();
+  sendDataESPNOW();
+}
+
+void sendDataESPNOW() {
+  // Print debug information of Slave to get masters
+  static unsigned long last_debug = 0;
+  if (millis() - last_debug > 10000) {
+    last_debug = millis();
+    checkMasterESPNOW();
+  }
+
+
+  static uint32_t lastESPNOWUpdate = 0;
+  if (millis() - lastESPNOWUpdate > 5000) {
+    sendMessageESPNOW();
+    
+    lastESPNOWUpdate = millis();
+  }
 }
 
 void showTime() {
-   static uint32_t lastClockUpdate = 0;
-    if (millis() - lastClockUpdate > 60000) {
-      clockDisplay.update();
-      lastClockUpdate = millis();
-    }
+  static uint32_t lastClockUpdate = 0;
+  if (millis() - lastClockUpdate > 60000 || lastClockUpdate == 0) {
+    clockDisplay.update();
+    lastClockUpdate = millis();
+  }
 }
 
 void loopInference() {
@@ -117,10 +139,15 @@ void loopInference() {
     if (++print_results >= EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW) {     
       std::vector<ImpulseResult> results;
 
-      for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+       for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+        String label = result.classification[ix].label;
+        float value = result.classification[ix].value;
+
+        pp->addSample(label, value);
+
         ImpulseResult ir;
-        ir.label = result.classification[ix].label;
-        ir.value = result.classification[ix].value;
+        ir.label = label;
+        ir.value = value;
         results.push_back(ir);
       }
 
@@ -130,4 +157,18 @@ void loopInference() {
       print_results = 0;
     }
   }
+}
+
+void setupPostProcessor() {
+  String labels[EI_CLASSIFIER_LABEL_COUNT];
+  for (int i = 0; i < EI_CLASSIFIER_LABEL_COUNT; ++i) {
+    labels[i] = String(ei_classifier_inferencing_categories[i]);
+  }
+
+  // Ventana de promedio para mostrar la alerta
+  const int windowSize = 4;
+
+  // Construir el PostProcessor con el array de String y la cuenta de etiquetas
+  pp = new PostProcessor(labels, EI_CLASSIFIER_LABEL_COUNT, windowSize);
+  resultsDisplay.setPostProcessor(pp);
 }
