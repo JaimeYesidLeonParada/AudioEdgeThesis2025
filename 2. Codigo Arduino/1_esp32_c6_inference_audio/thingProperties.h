@@ -12,8 +12,8 @@ const char PASS[]        = "raspberrypi";    // Network password (use for WPA, o
 //const char DEVICE_LOGIN_NAME[]  = "0a70fcec-965a-4a16-a1ab-65a5e652b08f"; //Device ID BASE 1
 //const char DEVICE_KEY[]  = "eaCkexHSQcriaE3!!s8wNgh57";    // Secret device password BASE 1
 
-const char DEVICE_LOGIN_NAME[]  = ""; //Device ID RELOJ
-const char DEVICE_KEY[]  = "";    // Secret device password RELOJ
+const char DEVICE_LOGIN_NAME[]  = "332853f5-1ce1-4825-8238-947a2bce7266"; //Device ID RELOJ
+const char DEVICE_KEY[]  = "kFBX#ldQFnAgF9VYO#XiF!SC2";    // Secret device password RELOJ
 
 void onLEDStateChange();
 

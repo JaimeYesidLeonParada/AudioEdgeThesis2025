@@ -10,6 +10,7 @@ public:
   ClockDisplay(Arduino_GFX *gfx);
   void begin();
   void update();
+  void refreshTime();
 
 private:
   Arduino_GFX *gfx;

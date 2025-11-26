@@ -6,3 +6,4 @@ struct DateTime
 
 void pcf85063_init(void);
 DateTime getCurrentTime();
+void updateTimeWithWiFi();

@@ -97,6 +97,7 @@ void sendDataESPNOW() {
   if (WiFi.status() == WL_CONNECTED ) {
     if (configured == false) {
       setupESPNOW();
+      clockDisplay.refreshTime();
       configured = true;
       return;
     }

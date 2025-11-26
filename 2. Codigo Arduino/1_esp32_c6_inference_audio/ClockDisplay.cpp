@@ -37,3 +37,7 @@ void ClockDisplay::update() {
     gfx->setTextSize(2);
     gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
 }
+
+void ClockDisplay::refreshTime() {
+  updateTimeWithWiFi();
+}
