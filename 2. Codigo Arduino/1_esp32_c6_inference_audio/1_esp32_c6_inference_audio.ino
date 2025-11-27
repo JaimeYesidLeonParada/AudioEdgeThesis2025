@@ -89,6 +89,31 @@ void loop() {
   showTime();
   loopInference();
   sendDataESPNOW();
+  checkESPNOWMessages();
+}
+
+void checkESPNOWMessages(){
+  String msg = checkMessagesReceived();
+
+  if (msg.length() == 0) {
+    // No hay mensaje nuevo, salir sin dibujar
+    return;
+  }
+  // Limpiar área bajo el reloj
+  gfx->fillRect(0, 85, gfx->width(), gfx->height(), RGB565_BLACK);
+  gfx->setFont(u8g2_font_fub11_tf); 
+  gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
+
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx->getTextBounds(msg, 0, 0, &x1, &y1, &w, &h);
+
+  int16_t centerX = 0;   // ajusta según tu pantalla
+  int16_t centerY = 140; // ajusta según tu pantalla
+
+  gfx->setCursor(centerX, centerY);
+  gfx->println(msg);
+  delay(3000);
 }
 
 void sendDataESPNOW() {
@@ -112,7 +137,7 @@ void sendDataESPNOW() {
   }
 
   static uint32_t lastESPNOWUpdate = 0;
-  if (millis() - lastESPNOWUpdate > 10000) {
+  if (millis() - lastESPNOWUpdate > 40000) {
     sendMessageESPNOW();
     
     lastESPNOWUpdate = millis();

@@ -86,6 +86,7 @@ AlertLevel ResultsDisplay::showResults(const std::vector<ImpulseResult> &results
 
     gfx->setCursor(centerX, centerY);
     gfx->println(msg);
+    delay(1000);
 
     return alertLevel;
   }

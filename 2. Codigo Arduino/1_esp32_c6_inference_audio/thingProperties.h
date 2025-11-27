@@ -3,17 +3,20 @@
 #include <ArduinoIoTCloud.h>
 #include <Arduino_ConnectionHandler.h>
 
-const char SSID[]        = "JAIMELEON";    // Network SSID (name)
+//const char SSID[]        = "JAIMELEON";    // Network SSID (name)
+//const char PASS[]        = "raspberrypi";    // Network password (use for WPA, or use as key for WEP)
+
+const char SSID[]        = "JaimeLeonPhone";    // Network SSID (name)
 const char PASS[]        = "raspberrypi";    // Network password (use for WPA, or use as key for WEP)
 
 //const char DEVICE_LOGIN_NAME[]  = "fa7f8f34-db1a-453e-9dc9-1704d1404bb4"; //Device ID BASE 2
 //const char DEVICE_KEY[]  = "KthpL@KGJxYjuYO!PanhQm5?H";    // Secret device password BASE 2
 
-//const char DEVICE_LOGIN_NAME[]  = "0a70fcec-965a-4a16-a1ab-65a5e652b08f"; //Device ID BASE 1
-//const char DEVICE_KEY[]  = "eaCkexHSQcriaE3!!s8wNgh57";    // Secret device password BASE 1
+const char DEVICE_LOGIN_NAME[]  = "0a70fcec-965a-4a16-a1ab-65a5e652b08f"; //Device ID BASE 1
+const char DEVICE_KEY[]  = "eaCkexHSQcriaE3!!s8wNgh57";    // Secret device password BASE 1
 
-const char DEVICE_LOGIN_NAME[]  = "332853f5-1ce1-4825-8238-947a2bce7266"; //Device ID RELOJ
-const char DEVICE_KEY[]  = "kFBX#ldQFnAgF9VYO#XiF!SC2";    // Secret device password RELOJ
+//const char DEVICE_LOGIN_NAME[]  = "332853f5-1ce1-4825-8238-947a2bce7266"; //Device ID RELOJ
+//const char DEVICE_KEY[]  = "kFBX#ldQFnAgF9VYO#XiF!SC2";    // Secret device password RELOJ
 
 void onLEDStateChange();
 

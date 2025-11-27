@@ -6,6 +6,7 @@
 #include <vector>
 
 //#define ESPNOW_WIFI_CHANNEL 6
+String lastMessageReceived = "";
 
 /* Classes */
 // Creating a new class that inherits from the ESP_NOW_Peer class is required.
@@ -62,6 +63,8 @@ public:
   void onReceive(const uint8_t *data, size_t len, bool broadcast) {
     Serial.printf("Received a message from master " MACSTR " (%s)\n", MAC2STR(addr()), broadcast ? "broadcast" : "unicast");
     Serial.printf("  Message: %s\n", (char *)data);
+
+    lastMessageReceived = String((char*)data);
   }
 };
 
@@ -69,6 +72,7 @@ public:
 
 uint32_t msg_count = 0;
 uint32_t wiFiChannel = 0;
+
 
 // Create a broadcast peer object
 ESP_NOW_Broadcast_Peer broadcast_peer(wiFiChannel, WIFI_IF_STA, nullptr);
@@ -143,8 +147,10 @@ void setupESPNOW() {
 
 void sendMessageESPNOW() {
   // Broadcast a message to all devices within the network
-    char data[32];
-    snprintf(data, sizeof(data), "Hola, soy EL reloj, Es tiempo de rockear? #%lu", msg_count++);
+    char data[46];                         
+    //snprintf(data, sizeof(data), "Base 2 cambio,  Houston estan  ahi ??");
+    //snprintf(data, sizeof(data), "Hola soy El      Reloj, el tiempo no existe.");
+    snprintf(data, sizeof(data), "Base 1 aqui,    Me pueden      escuchar?");
 
     //Serial.printf("Broadcasting message: %s\n", data);
 
@@ -160,4 +166,10 @@ void checkMasterESPNOW() {
         Serial.printf("  Master %zu: " MACSTR "\n", i, MAC2STR(masters[i]->addr()));
       }
     }
+}
+
+String checkMessagesReceived() {
+  String msg = lastMessageReceived;
+  lastMessageReceived = "";
+  return msg;
 }
